@@ -1,8 +1,7 @@
 import serial
 import sys
-import plt
-import plt.pelco
-import plt.common
+import ptz.pelco
+import ptz.common
 
 
 
@@ -22,15 +21,15 @@ while True:
   except:
     break
 
-  #cnt = plt.common.default.process(data, cnt) #16 by 8
-  #cnt = plt.common.default.process(data, cnt, 7, 14) #14 by 7 for pelco-d
+  #cnt = ptz.common.default.process(data, cnt) #16 by 8
+  #cnt = ptz.common.default.process(data, cnt, 7, 14) #14 by 7 for pelco-d
 
-  #cnt = plt.ad2200.process(data, cnt)
-  #cnt = plt.pelco.p.process(data, cnt)
-  cnt = plt.pelco.d.process(data, cnt)
-  #cnt = plt.yaan.process(data, cnt)
-  #cnt = plt.panasonic.process(data, cnt)
-  #cnt = plt.samsung.process(data, cnt)
+  #cnt = ptz.ad2200.process(data, cnt)
+  #cnt = ptz.pelco.p.process(data, cnt)
+  cnt = ptz.pelco.d.process(data, cnt)
+  #cnt = ptz.yaan.process(data, cnt)
+  #cnt = ptz.panasonic.process(data, cnt)
+  #cnt = ptz.samsung.process(data, cnt)
 
 
 ser.close()
