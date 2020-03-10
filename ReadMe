@@ -1,5 +1,5 @@
-PTZ Pelco D, Peclo P emulator
+PTZ Pelco-D, Peclo-P emulator
 
-Pelco D, Pelco P protocols are used to control PanTiltZoom (PTZ) cameras
+Pelco-D, Pelco-P protocols are used to control PanTiltZoom (PTZ) cameras
 
 implemented for python 2
