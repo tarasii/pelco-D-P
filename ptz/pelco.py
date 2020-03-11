@@ -48,12 +48,23 @@ class protocol(common.protocol):
   def cmd_encode(cls, addr, cmd, data):
     res = ''
     
-    tmp = '\x00\x00'
-    for k,v in cls.cmd_dt.items():
-      if v == cmd:
-        tmp = k
+    cmd = cmd.split(' ')
 
-    l = [cls.start, chr(addr & 0xff), tmp[0], tmp[1], chr(data[0]), chr(data[1]), cls.end]
+    cmd_lst = []
+    for x in cmd:
+      tmp = '\x00\x00'
+      for k,v in cls.cmd_dt.items():
+        if v == x:
+          tmp = k
+
+      cmd_lst.append(tmp)
+        
+    if len(cmd_lst)==2:  
+      res = [chr(ord(cmd_lst[0][0]) | ord(cmd_lst[1][0])), chr(ord(cmd_lst[0][1]) | ord(cmd_lst[1][1]))] 
+    else:
+      res = cmd_lst[0]
+    
+    l = [cls.start, chr(addr & 0xff), res[0], res[1], chr(data[0] & 0xff), chr(data[1] & 0xff), cls.end]
     l.append(chr(cls.crc_calc(l)))
     res = ''.join(l)
 
