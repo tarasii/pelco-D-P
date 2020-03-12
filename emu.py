@@ -81,7 +81,6 @@ def proto_selected(event):
   global proto
 
   tmp = c_proto.current()
-  print tmp
   if tmp==0:
     proto = ptz.pelco.d
   elif tmp==1:
