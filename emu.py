@@ -8,58 +8,89 @@ buf = 0
 
 pos = 0
 
-root = tk.Tk()
-root.title = "Pelco emulator"
-frame = tk.Frame(root)
-frame.pack()
-
 mouse = False  
 x = 0
 y = 0
 
 ser = 0
+connected = False
+proto = ptz.pelco.d
+
+def on_closing():
+  global ser
+  global connected
+
+  if connected:
+    ser.close()
+
+  quit()
+
+root = tk.Tk()
+root.title("Pelco keyboard controller emulator")
+root.protocol("WM_DELETE_WINDOW", on_closing)
+frame = tk.Frame(root)
+frame.pack()
 
 frp = tk.Frame(frame)
 frp.grid(column=0, row=0, columnspan=6)
 
-#v_port = tk.StringVar()
-lbl_port = tk.Label(frp, text="port:")#textvariable=v_port)
-#lbl_port.grid(column=0, row=0)
+lbl_port = tk.Label(frp, text="port:")
 lbl_port.pack(side = tk.LEFT)
-#v_lbl.set("port:")
 
 v_port = tk.StringVar()
 e_port = tk.Entry(frp, textvariable=v_port, width=12)
-#e_port.grid(column=1, row=0, columnspan=2)
 e_port.pack(side = tk.LEFT)
 v_port.set("/dev/ttyUSB0")
 
 lbl_port = tk.Label(frp, text="speed:")#textvariable=v_port)
-#lbl_port.grid(column=3, row=0)
 lbl_port.pack(side = tk.LEFT)
 
 v_speed = tk.StringVar()
-e_speed = tk.Entry(frp, textvariable=v_speed, width=6)
-#e_speed.grid(column=4, row=0, columnspan=2)
+e_speed = ttk.Combobox(frp, textvariable=v_speed, width=6, values=['1200', '2400', '4800', '9600'])
 e_speed.pack(side = tk.LEFT)
-v_speed.set("9600")
+e_speed.current(3)
+
+def connect():
+  global ser
+  global connected
+
+  if connected:
+    ser.close()
+    connected = False
+    v_conn.set("CONNECT")
+  else:
+    try:
+      ser = serial.Serial (v_port.get())
+      ser.baudrate = v_speed.get()
+
+      connected = True
+      v_conn.set("DISCONNECT")
+    except:
+      v_cmd.set("Error opening port!")
+
+v_conn = tk.StringVar()
+b_conn = tk.Button(frp, textvariable=v_conn, width=8, command=connect)
+b_conn.pack(side = tk.LEFT)
+v_conn.set("CONNECT")
 
 lbl_proto = tk.Label(frp, text="protocol:")#textvariable=v_port)
 lbl_proto.pack(side = tk.LEFT)
 
-def connect():
-  global ser
-  ser = serial.Serial (v_port.get())
-  ser.baudrate = v_speed.get()
 
-b_conn = tk.Button(frp, text="CONNECT", width=5, command=connect)
-b_conn.pack(side = tk.LEFT)
+def proto_selected(event):
+  global proto
 
-v_proto = tk.StringVar()
-c_proto = ttk.Combobox(frp, textvariable=v_proto, width=6, values=['Pelco-D', 'Pelco-P'])
-c_proto.current = 0
-v_proto.set('Pelco-D')
+  tmp = c_proto.current()
+  print tmp
+  if tmp==0:
+    proto = ptz.pelco.d
+  elif tmp==1:
+    proto = ptz.pelco.p
+
+c_proto = ttk.Combobox(frp, width=6, values=['Pelco-D', 'Pelco-P'])
+c_proto.current(0)
 c_proto.pack(side = tk.LEFT)
+c_proto.bind("<<ComboboxSelected>>", proto_selected)
 
 v_addr = tk.StringVar()
 e_addr = tk.Entry(frame, textvariable=v_addr, state='readonly', width=15)
@@ -71,6 +102,8 @@ def motion(event):
   global mouse
   global x
   global y
+  global ser
+  global connected
 
   x_max = 130 #c.winfo_width()
   y_max = 130 #c.winfo_height()
@@ -100,8 +133,11 @@ def motion(event):
     side = ' '.join([side0, side1]).strip()
     #print side
 
-    cmd = ptz.pelco.d.cmd_encode(addr,side,[abs(x),abs(y)])
+    cmd = proto.cmd_encode(addr,side,[abs(x),abs(y)])
     v_cmd.set(cmd.encode('hex'))
+    if connected:
+      ser.write(cmd)
+
     #v_cmd.set("x:{} y:{}".format(x,y))
     v_lbl.set("x:{} y:{}".format(x,y))
 
@@ -120,11 +156,16 @@ def mouse_up(event):
   global x
   global y
   global addr
+  global ser
+  global connected
   mouse = False
   x = 0
   y = 0
-  cmd = ptz.pelco.d.cmd_encode(addr,'stop',[0,0])
+  cmd = proto.cmd_encode(addr,'stop',[0,0])
   v_cmd.set(cmd.encode('hex'))
+  if connected:
+    ser.write(cmd)
+
   v_lbl.set("x:{} y:{}".format(x,y))
   sby.set(0.4,0.6)
   sbx.set(0.4,0.6)
@@ -140,20 +181,16 @@ sbx = tk.Scrollbar(frc, orient = tk.HORIZONTAL)
 sbx.pack( side = tk.BOTTOM, fill = tk.X )
 sbx.set(0.4,0.6)
 
-
 c = tk.Canvas(frc, width=130, height=130, bg='black')
-#c.grid(column=5, row=0, rowspan=5)
 c.bind('<Motion>',motion)
 c.bind('<ButtonPress-1>', mouse_down)
 c.bind('<ButtonRelease-1>', mouse_up)
 c.pack(side=tk.LEFT,expand=True,fill=tk.BOTH)
-#print dir(c)
-#print   c.winfo_width(),c.winfo_height()
 
 v_lbl = tk.StringVar()
 lbl = tk.Label(frame, textvariable=v_lbl, bg='black', fg='white')
 v_lbl.set("x:{} y:{}".format(x,y))
-lbl.grid(column=5, row=5)
+lbl.grid(column=5, row=2)
 
 
 def onNumbersButton(num):
@@ -230,10 +267,14 @@ b_far = tk.Button(frame, text="FAR", width=5, command=lambda:onCmdButton("far"))
 b_far.grid(column=4, row=4)
 
 def onCmdButton(txt):
-	global addr
-	cmd = ptz.pelco.d.cmd_encode(addr,txt,[0,0])
+  global addr
+  global ser
+  global connected
+  cmd = proto.cmd_encode(addr,txt,[0,0])
   #print ("fuck")
-	v_cmd.set(cmd.encode('hex'))
+  v_cmd.set(cmd.encode('hex'))
+  if connected:
+    ser.write(cmd)
 
 b_wide = tk.Button(frame, text="WIDE", width=5, command=lambda:onCmdButton("wide"))
 b_wide.grid(column=3, row=5)
@@ -242,8 +283,8 @@ b_tele = tk.Button(frame, text="TELE", width=5, command=lambda:onCmdButton("tele
 b_tele.grid(column=4, row=5)
 
 v_cmd = tk.StringVar()
-e_cmd = tk.Entry(frame, textvariable=v_cmd)
-e_cmd.grid(column=0, row=6, columnspan=4)
+e_cmd = tk.Entry(frame, textvariable=v_cmd, width=35)
+e_cmd.grid(column=0, row=6, columnspan=5)
 v_cmd.set("Hello!")
 
 
