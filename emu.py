@@ -42,7 +42,7 @@ e_port = tk.Entry(frp, textvariable=v_port, width=12)
 e_port.pack(side = tk.LEFT)
 v_port.set("/dev/ttyUSB0")
 
-lbl_port = tk.Label(frp, text="speed:")#textvariable=v_port)
+lbl_port = tk.Label(frp, text="speed:")
 lbl_port.pack(side = tk.LEFT)
 
 v_speed = tk.StringVar()
@@ -57,23 +57,21 @@ def connect():
   if connected:
     ser.close()
     connected = False
-    v_conn.set("CONNECT")
+    b_conn.config(text="CONNECT")
   else:
     try:
       ser = serial.Serial (v_port.get())
       ser.baudrate = v_speed.get()
 
       connected = True
-      v_conn.set("DISCONNECT")
+      b_conn.config(text="DISCONNECT")
     except:
       v_cmd.set("Error opening port!")
 
-v_conn = tk.StringVar()
-b_conn = tk.Button(frp, textvariable=v_conn, width=8, command=connect)
+b_conn = tk.Button(frp, text="CONNECT", width=8, command=connect)
 b_conn.pack(side = tk.LEFT)
-v_conn.set("CONNECT")
 
-lbl_proto = tk.Label(frp, text="protocol:")#textvariable=v_port)
+lbl_proto = tk.Label(frp, text="protocol:")
 lbl_proto.pack(side = tk.LEFT)
 
 
